@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -21,18 +21,19 @@ small{color:#778}
   <p><small>كل فتح للرابط يُسجَّل كعملية مستقلة، حتى إذا كان نفس الشخص قد مسح الرمز سابقاً.</small></p>
 </main>
 <script>
-const STORAGE_KEY = 'qr_scans_db';
+/* ===== ضع رابط قاعدة بيانات Firebase هنا ===== */
+const FIREBASE_DB_URL = "https://magaza-f6681-default-rtdb.europe-west1.firebasedatabase.app/qr_scan_system";
+/* ============================================= */
 
 const statusBox = document.getElementById("status");
 function show(message, cls=""){ statusBox.textContent = message; statusBox.className = cls; }
 
-function loadDB(){
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {zones:{}, scans:[]}; }
-  catch(e){ return {zones:{}, scans:[]}; }
+function validConfig(){
+  return FIREBASE_DB_URL.startsWith("https://") &&
+         !FIREBASE_DB_URL.includes("YOUR-PROJECT");
 }
-function saveDB(db){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
 
-function recordScan(){
+async function recordScan(){
   const params = new URLSearchParams(location.search);
   const zone = (params.get("zone") || "").trim();
 
@@ -40,14 +41,21 @@ function recordScan(){
     show("رابط QR غير صالح: لم يتم تحديد المنطقة.", "bad");
     return;
   }
+  if(!validConfig()){
+    show("خاصك أولاً تعمّر رابط Firebase داخل ملف scan.html.", "bad");
+    return;
+  }
 
   try {
-    const db = loadDB();
-    db.zones = db.zones || {};
-    db.scans = db.scans || [];
-    db.zones[zone] = (db.zones[zone] || 0) + 1;
-    db.scans.push({ zone, ts: Date.now() });
-    saveDB(db);
+    // POST ينشئ سجلاً جديداً بمعرّف فريد + توقيت السيرفر (وليس ساعة الهاتف)
+    const res = await fetch(`${FIREBASE_DB_URL}/scans.json`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ zone: zone, createdAt: { ".sv": "timestamp" } })
+    });
+    const saved = await res.json();
+    if(!res.ok) throw new Error(saved.error || "تعذر حفظ العملية");
+
     show("✅ تم تسجيل عملية المسح بنجاح. شكراً لك!", "ok");
   } catch(err){
     show("لم نتمكن من تسجيل العملية: " + err.message, "bad");
