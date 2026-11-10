@@ -1,0 +1,59 @@
+﻿<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تسجيل عملية QR</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f6f8;margin:0;display:grid;place-items:center;min-height:100vh;color:#17202a}
+main{background:white;width:min(92%,440px);padding:28px;border-radius:18px;box-shadow:0 8px 30px #0001;text-align:center}
+h1{font-size:23px}p{line-height:1.8;color:#566}
+#status{padding:14px;border-radius:10px;background:#eef2f7;margin-top:18px}
+.ok{background:#e7f8ee!important;color:#126b36}.bad{background:#fff0ed!important;color:#9d2b1e}
+small{color:#778}
+</style>
+</head>
+<body>
+<main>
+  <h1>تسجيل عملية المسح</h1>
+  <p>سيتم تسجيل عملية Scan واحدة لهذا الرمز.</p>
+  <div id="status">جارٍ تسجيل العملية...</div>
+  <p><small>كل فتح للرابط يُسجَّل كعملية مستقلة، حتى إذا كان نفس الشخص قد مسح الرمز سابقاً.</small></p>
+</main>
+<script>
+const STORAGE_KEY = 'qr_scans_db';
+
+const statusBox = document.getElementById("status");
+function show(message, cls=""){ statusBox.textContent = message; statusBox.className = cls; }
+
+function loadDB(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {zones:{}, scans:[]}; }
+  catch(e){ return {zones:{}, scans:[]}; }
+}
+function saveDB(db){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+
+function recordScan(){
+  const params = new URLSearchParams(location.search);
+  const zone = (params.get("zone") || "").trim();
+
+  if(!zone || !/^[a-zA-Z0-9_-]{1,50}$/.test(zone)){
+    show("رابط QR غير صالح: لم يتم تحديد المنطقة.", "bad");
+    return;
+  }
+
+  try {
+    const db = loadDB();
+    db.zones = db.zones || {};
+    db.scans = db.scans || [];
+    db.zones[zone] = (db.zones[zone] || 0) + 1;
+    db.scans.push({ zone, ts: Date.now() });
+    saveDB(db);
+    show("✅ تم تسجيل عملية المسح بنجاح. شكراً لك!", "ok");
+  } catch(err){
+    show("لم نتمكن من تسجيل العملية: " + err.message, "bad");
+  }
+}
+recordScan();
+</script>
+</body>
+</html>
