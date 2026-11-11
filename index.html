@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="fr" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>تسجيل عملية QR</title>
+<title>Enregistrement du scan QR</title>
 <style>
 body{font-family:Arial,sans-serif;background:#f4f6f8;margin:0;display:grid;place-items:center;min-height:100vh;color:#17202a}
 main{background:white;width:min(92%,440px);padding:28px;border-radius:18px;box-shadow:0 8px 30px #0001;text-align:center}
@@ -15,15 +15,15 @@ small{color:#778}
 </head>
 <body>
 <main>
-  <h1>تسجيل عملية المسح</h1>
-  <p>سيتم تسجيل عملية Scan واحدة لهذا الرمز.</p>
-  <div id="status">جارٍ تسجيل العملية...</div>
-  <p><small>كل فتح للرابط يُسجَّل كعملية مستقلة، حتى إذا كان نفس الشخص قد مسح الرمز سابقاً.</small></p>
+  <h1>Enregistrement du scan</h1>
+  <p>Un scan sera enregistré pour ce code.</p>
+  <div id="status">Enregistrement en cours...</div>
+  <p><small>Chaque ouverture du lien est enregistrée comme un scan indépendant, même si la même personne a déjà scanné ce code auparavant.</small></p>
 </main>
 <script>
-/* ===== ضع رابط قاعدة بيانات Firebase هنا ===== */
+/* ===== Placez l'URL de la base de données Firebase ici ===== */
 const FIREBASE_DB_URL = "https://magaza-f6681-default-rtdb.europe-west1.firebasedatabase.app";
-/* ============================================= */
+/* =========================================================== */
 
 const statusBox = document.getElementById("status");
 function show(message, cls=""){ statusBox.textContent = message; statusBox.className = cls; }
@@ -38,30 +38,30 @@ async function recordScan(){
   const zone = (params.get("zone") || "").trim();
 
   if(!zone || !/^[a-zA-Z0-9_-]{1,50}$/.test(zone)){
-    show("رابط QR غير صالح: لم يتم تحديد المنطقة.", "bad");
+    show("Lien QR invalide : aucune zone spécifiée.", "bad");
     return;
   }
   if(!validConfig()){
-    show("خاصك أولاً تعمّر رابط Firebase داخل ملف scan.html.", "bad");
+    show("Veuillez d'abord renseigner l'URL Firebase dans le fichier scan.html.", "bad");
     return;
   }
 
   try {
-    // POST ينشئ سجلاً جديداً بمعرّف فريد + توقيت السيرفر (وليس ساعة الهاتف)
+    // POST crée un nouvel enregistrement avec un identifiant unique + horodatage serveur
     const res = await fetch(`${FIREBASE_DB_URL}/scans.json`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ zone: zone, createdAt: { ".sv": "timestamp" } })
     });
     const saved = await res.json();
-    if(!res.ok) throw new Error(saved.error || "تعذر حفظ العملية");
+    if(!res.ok) throw new Error(saved.error || "Impossible d'enregistrer l'opération");
 
-    show("✅ تم تسجيل عملية المسح بنجاح. شكراً لك!", "ok");
+    show("✅ Scan enregistré avec succès. Merci !", "ok");
   } catch(err){
-    show("لم نتمكن من تسجيل العملية: " + err.message, "bad");
+    show("Impossible d'enregistrer l'opération : " + err.message, "bad");
   }
 }
 recordScan();
 </script>
 </body>
-</html>
+</html>S
